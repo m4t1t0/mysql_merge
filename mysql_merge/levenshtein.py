@@ -22,14 +22,14 @@ def levenshtein(a,b):
 def levenshtein_lowest(string, options):
     "Returns items from options with lowest levenshtein distance to string"
     lowest = {
-      'dist': 100,
-      'item': None
+        'dist': 100,
+        'item': None
     }
     for o in options:
-      l = levenshtein(string, o)
-      if l < lowest['dist']:
-        lowest['dist'] = l
-        lowest['item'] = o
+        l = levenshtein(string, o)
+        if l < lowest['dist']:
+            lowest['dist'] = l
+            lowest['item'] = o
     
     return lowest['item']
     

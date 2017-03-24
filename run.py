@@ -10,8 +10,8 @@ import mysql_merge.config as config
 
 # VALIDATE CONFIG:
 if len(config.merged_dbs) == 0:
-  print "You must specify at least one database to merge"
-  sys.exit()
+    print "You must specify at least one database to merge"
+    sys.exit()
   
 # Prepare logger
 
@@ -38,33 +38,32 @@ destination_db_map = mapper.map_db()
 
 conn.close()
 
-
-
 print ""
 print "STEP 2. Map all the fields that looks like FKs but aren't stored as ones"
 map_fks(db_map)
-
 
 print ""
 print "STEP 3. Actually merge all the databases"
 print ""
 counter = 0
 for source_db in config.merged_dbs:
- counter = counter + 1
- try:
-  source_db_tpl = copy.deepcopy(config.common_data)
-  source_db_tpl.update(source_db)
-  
-  destination_db_tpl = copy.deepcopy(config.common_data)
-  destination_db_tpl.update(config.destination_db)
+    if (source_db['db'] != config.main_db):
+        counter = counter + 1
 
-  merger = Merger(destination_db_map, source_db_tpl, destination_db_tpl, config, counter, MiniLogger())
-  merger.merge()
+    try:
+        source_db_tpl = copy.deepcopy(config.common_data)
+        source_db_tpl.update(source_db)
+  
+        destination_db_tpl = copy.deepcopy(config.common_data)
+        destination_db_tpl.update(config.destination_db)
+
+        merger = Merger(destination_db_map, source_db_tpl, destination_db_tpl, config, counter, MiniLogger())
+        merger.merge()
   
 
- except Exception,e:
-   conn = merger._conn if globals().has_key('merger') else None
-   handle_exception("There was an unexpected error while merging db %s" % source_db['db'], e, conn)
+    except Exception,e:
+        conn = merger._conn if globals().has_key('merger') else None
+        handle_exception("There was an unexpected error while merging db %s" % source_db['db'], e, conn)
    
 print "Merge is finished"
 

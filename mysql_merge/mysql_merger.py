@@ -103,7 +103,9 @@ class Merger(object):
         self._fk_checks(True)
 
         self._logger.log(" -> 6/9 Incrementing PKs")
-        self.increment_pks()
+        #Do not touch the main DB
+        if (self._source_db['db'] != self._config.main_db):
+            self.increment_pks()
 
         self._logger.log(" -> 7/9 Mapping pk in case of uniques conflict")
         self.map_pks_to_target_on_unique_conflict()
@@ -116,7 +118,9 @@ class Merger(object):
         self._fk_checks(True)
 
         self._logger.log(" -> 9/9 Decrementing pks")
-        self.rollback_pks()
+        #Do not touch the main DB
+        if (self._source_db['db'] != self._config.main_db):
+            self.rollback_pks()
 
         self._logger.log(" -> 10/9 Committing changes")
         self._conn.commit()
@@ -311,6 +315,11 @@ class Merger(object):
         for table_name, table_map in self._db_map.items():
             if any([table_name in v for k,v in diff_tables.items()]):
                 continue
+
+            if (self._source_db['db'] != self._config.main_db):
+                if (table_name in self._config.exclude_tables):
+                    continue
+
             try:
                 where = ""
                 if len(table_map['pk_changed_to_resolve_unique_conficts']):
