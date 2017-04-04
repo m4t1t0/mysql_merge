@@ -24,7 +24,7 @@ print " -> 1.1 First merged db"
 mapped_db = config.merged_dbs[0]
 conn = create_connection(mapped_db, config.common_data)
 
-mapper = Mapper(conn, mapped_db['db'], MiniLogger())
+mapper = Mapper(conn, mapped_db['db'], config, MiniLogger())
 db_map = mapper.map_db()
 
 conn.close()
@@ -33,7 +33,8 @@ print " -> 1.2 Destination db"
 
 conn = create_connection(config.destination_db, config.common_data)
 
-mapper = Mapper(conn, config.destination_db['db'], MiniLogger())
+mapper = Mapper(conn, config.destination_db['db'], config, MiniLogger())
+mapper.execute_preprocess_queries_target()
 destination_db_map = mapper.map_db()
 
 conn.close()
@@ -45,6 +46,7 @@ map_fks(db_map)
 print ""
 print "STEP 3. Actually merge all the databases"
 print ""
+
 counter = 0
 for source_db in config.merged_dbs:
     if (source_db['db'] != config.main_db):
@@ -64,6 +66,13 @@ for source_db in config.merged_dbs:
     except Exception,e:
         conn = merger._conn if globals().has_key('merger') else None
         handle_exception("There was an unexpected error while merging db %s" % source_db['db'], e, conn)
-   
-print "Merge is finished"
 
+conn = create_connection(config.destination_db, config.common_data)
+
+mapper = Mapper(conn, config.destination_db['db'], config, MiniLogger())
+mapper.execute_postrocess_queries_target()
+destination_db_map = mapper.map_db()
+
+conn.close()
+
+print "Merge is finished"

@@ -1,3 +1,4 @@
+from mysql_merge.utils import MiniLogger, create_connection, handle_exception
 from collections import defaultdict
 import sys
 import copy
@@ -21,12 +22,13 @@ class Mapper(object):
     _logger = None
     _verbose = True
 
-    def __init__(self, conn, db_name, logger, verbose=True):
+    def __init__(self, conn, db_name, config, logger, verbose=True):
         self.db_map = {}
 
         self._verbose = verbose
 
         self._db_name = db_name
+        self._config = config
         self._logger = logger
 
         self._conn = conn
@@ -39,6 +41,31 @@ class Mapper(object):
 
         return self.db_map
 
+    def execute_preprocess_queries_target(self):
+        cur = self._cursor
+
+        for q in self._config.preprocess_queries_target:
+            try:
+                self._logger.qs = q
+                cur.execute(self._logger.qs)
+            #except _mysql_exceptions.OperationalError,e:
+            except Exception, e:
+                handle_exception(
+                    "There was an error while executing preprocess_queries_target\nPlease fix your config and try again",
+                    e, self._conn)
+
+    def execute_postrocess_queries_target(self):
+        cur = self._cursor
+
+        for q in self._config.postprocess_queries_target:
+            try:
+                self._logger.qs = q
+                cur.execute(self._logger.qs)
+            #except _mysql_exceptions.OperationalError,e:
+            except Exception, e:
+                handle_exception(
+                    "There was an error while executing postprocess_queries_target\nPlease fix your config and try again",
+                    e, self._conn)
 
     def get_overlapping_tables(self, destination_map):
         """
@@ -120,7 +147,7 @@ class Mapper(object):
                 append_conditions = {
                 'primary': field['Key'] == 'PRI' and is_int,
                 'unique': field['Key'] == 'UNI',
-                'fk_maybe': "_id" in field['Field'] and is_int,
+                'fk_maybe': ("_id" in field['Field'] and is_int) or ("id_" in field['Field'] and is_int),
                 'columns': True
                 }
 

@@ -1,3 +1,4 @@
+import sys
 from mysql_merge.utils import MiniLogger, create_connection, handle_exception
 from mysql_merge.mysql_mapper import Mapper
 from mysql_merge.utils import map_fks, lists_diff
@@ -45,7 +46,7 @@ class Merger(object):
         # to remap them
 
         self._logger.log(" -> 1/2 Re-mapping database")
-        self._source_mapper = Mapper(self._conn, source_db['db'], MiniLogger(), verbose=False)
+        self._source_mapper = Mapper(self._conn, source_db['db'], config, MiniLogger(), verbose=False)
         db_map = self._source_mapper.map_db()
 
         self._logger.log(" -> 2/2 Re-applying FKs mapping to current database schema - in case execution broke before")
@@ -85,44 +86,53 @@ class Merger(object):
 
         self._fk_checks(False)
 
-        self._logger.log(" -> 1/9 Executing preprocess_queries (specified in config)")
+        self._logger.log(" -> 1/13 Executing preprocess_queries (specified in config)")
         self.execute_preprocess_queries()
 
-        self._logger.log(" -> 2/9 Converting tables to InnoDb")
+        self._logger.log(" -> 2/13 Re-mapping database")
+        self._source_mapper = Mapper(self._conn, self._source_db['db'], self._config, MiniLogger(), verbose=False)
+        db_map = self._source_mapper.map_db()
+
+        self._logger.log(" -> 4/13 Re-applying FKs mapping to current database schema")
+        map_fks(db_map, False)
+
+        self._db_map = db_map
+
+        self._logger.log(" -> 5/13 Converting tables to InnoDb")
         self.convert_tables_to_innodb()
 
-        self._logger.log(" -> 3/9 Converting FKs to UPDATE CASCADE")
+        self._logger.log(" -> 6/13 Converting FKs to UPDATE CASCADE")
         self.convert_fks_to_update_cascade()
 
-        self._logger.log(" -> 4/9 Converting mapped FKs to real FKs")
+        self._logger.log(" -> 7/13 Converting mapped FKs to real FKs")
         self.convert_mapped_fks_to_real_fks()
 
-        self._logger.log(" -> 5/9 Nulling orphaned FKs")
+        self._logger.log(" -> 8/13 Nulling orphaned FKs")
         self.null_orphaned_fks()
 
         self._fk_checks(True)
 
-        self._logger.log(" -> 6/9 Incrementing PKs")
+        self._logger.log(" -> 9/13 Incrementing PKs")
         #Do not touch the main DB
         if (self._source_db['db'] != self._config.main_db):
             self.increment_pks()
 
-        self._logger.log(" -> 7/9 Mapping pk in case of uniques conflict")
+        #self._logger.log(" -> 10/13 Mapping pk in case of uniques conflict")
         self.map_pks_to_target_on_unique_conflict()
 
         self._fk_checks(False)
 
-        self._logger.log(" -> 8/9 Copying data to the destination db")
-        self.copy_data_to_target()
+        self._logger.log(" -> 11/13 Copying data to the destination db")
+        #self.copy_data_to_target()
 
         self._fk_checks(True)
 
-        self._logger.log(" -> 9/9 Decrementing pks")
+        self._logger.log(" -> 12/13 Decrementing pks")
         #Do not touch the main DB
-        if (self._source_db['db'] != self._config.main_db):
-            self.rollback_pks()
+        #if (self._source_db['db'] != self._config.main_db):
+        #    self.rollback_pks()
 
-        self._logger.log(" -> 10/9 Committing changes")
+        self._logger.log(" -> 13/13 Committing changes")
         self._conn.commit()
         self._logger.log("----------------------------------------")
 
@@ -138,7 +148,6 @@ class Merger(object):
                 handle_exception(
                     "There was an error while executing preprocess_queries\nPlease fix your config and try again",
                     e, self._conn)
-
 
     def convert_tables_to_innodb(self):
         cur = self._cursor
@@ -225,6 +234,9 @@ class Merger(object):
 
         # Update all numeric PKs to ID + 1 000 000
         for table_name, table_map in self._db_map.items():
+            if (table_name in self._config.exclude_tables):
+                continue
+
             for col_name, col_data in table_map['primary'].items():
                 # If current col is also a Foreign Key, we do not touch it
                 if table_map['fk_host'].has_key(col_name):
@@ -246,6 +258,9 @@ class Merger(object):
         # if there's unique value collidinb with target database
         update_cur = self._conn.cursor()
         for table_name, table_map in self._db_map.items():
+            if (table_name in self._config.exclude_tables):
+                continue
+            
             pks = table_map['primary'].keys()
             if len(pks) != 1:
                 continue
@@ -355,8 +370,11 @@ class Merger(object):
     def rollback_pks(self):
         cur = self._cursor
 
-        # Return all PKs to thei previous state: ID - 1 000 000
+        # Return all PKs to their previous state: ID - 1 000 000
         for table_name, table_map in self._db_map.items():
+            if (table_name in self._config.exclude_tables):
+                continue
+
             for col_name, col_data in table_map['primary'].items():
                 if table_map['fk_host'].has_key(col_name):
                     continue
