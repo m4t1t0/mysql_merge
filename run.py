@@ -2,8 +2,7 @@ import sys
 import copy
 import traceback
 from collections import defaultdict
-
-from mysql_merge.utils import MiniLogger, create_connection, handle_exception, map_fks
+from mysql_merge.utils import MiniLogger, create_connection, handle_exception
 from mysql_merge.mysql_mapper import Mapper
 from mysql_merge.mysql_merger import Merger
 import mysql_merge.config as config
@@ -40,11 +39,7 @@ destination_db_map = mapper.map_db()
 conn.close()
 
 print ""
-print "STEP 2. Map all the fields that looks like FKs but aren't stored as ones"
-map_fks(db_map)
-
-print ""
-print "STEP 3. Actually merge all the databases"
+print "STEP 2. Actually merge all the databases"
 print ""
 
 counter = 0
@@ -66,6 +61,10 @@ for source_db in config.merged_dbs:
     except Exception,e:
         conn = merger._conn if globals().has_key('merger') else None
         handle_exception("There was an unexpected error while merging db %s" % source_db['db'], e, conn)
+
+print ""
+print "STEP 3. Performing post-processing"
+print ""
 
 conn = create_connection(config.destination_db, config.common_data)
 
