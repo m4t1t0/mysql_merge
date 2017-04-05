@@ -113,15 +113,24 @@ class Merger(object):
             if (table_name in self._config.exclude_tables):
                 continue
 
+            increment_value = self.get_increment_value_table(table_name)
+
             for col_name, col_data in table_map['primary'].items():
                 try:
                     self._logger.qs = "UPDATE `%(table)s` SET `%(pk)s` = `%(pk)s` + %(step)d" % {"table": table_name,
                                                                                                  "pk": col_name,
-                                                                                                 'step': self._increment_value}
+                                                                                                 'step': increment_value}
                     cur.execute(self._logger.qs)
                 except Exception, e:
                     handle_exception("There was an error while updating PK `%s`.`%s` to %d + pk_value" % (
                     table_name, col_name, self._increment_value), e, self._conn)
+
+    def get_increment_value_table(self, table_name):
+        for table_data in self._config.custom_increment_step:
+            if (table_data['table'] == table_name):
+                return table_data['value']
+
+        return self._increment_value
 
     def increment_fks(self):
         cur = self._cursor
@@ -129,6 +138,12 @@ class Merger(object):
         set_clause = ""
         joiner = ""
         for table_data in self._config.fk_mapping:
+            set_clause = ""
+            joiner = ""
+
+            if (table_data['fields'] == None):
+                continue
+
             for field in table_data['fields']:
                 if (set_clause != ""):
                     joiner = ", "
