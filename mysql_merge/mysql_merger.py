@@ -161,6 +161,7 @@ class Merger(object):
 
     def copy_data_to_target(self):
         cur = self._cursor
+        cur._defer_warnings = True
 
         diff_tables = self._source_mapper.get_non_overlapping_tables(self._destination_db_map)
         for k, v in diff_tables.items():
