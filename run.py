@@ -36,6 +36,7 @@ mapper = Mapper(conn, config.destination_db['db'], config, MiniLogger())
 mapper.execute_preprocess_queries_target()
 destination_db_map = mapper.map_db()
 
+conn.commit()
 conn.close()
 
 print ""
@@ -70,8 +71,8 @@ conn = create_connection(config.destination_db, config.common_data)
 
 mapper = Mapper(conn, config.destination_db['db'], config, MiniLogger())
 mapper.execute_postrocess_queries_target()
-destination_db_map = mapper.map_db()
 
+conn.commit()
 conn.close()
 
 print "Merge is finished"
