@@ -43,6 +43,7 @@ class Mapper(object):
 
     def execute_preprocess_queries_target(self):
         cur = self._cursor
+        cur._defer_warnings = True
 
         for q in self._config.preprocess_queries_target:
             try:
@@ -56,6 +57,7 @@ class Mapper(object):
 
     def execute_postrocess_queries_target(self):
         cur = self._cursor
+        cur._defer_warnings = True
 
         for q in self._config.postprocess_queries_target:
             try:

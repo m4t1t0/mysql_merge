@@ -96,6 +96,7 @@ class Merger(object):
 
     def execute_preprocess_queries(self):
         cur = self._cursor
+        cur._defer_warnings = True
 
         for q in self._config.preprocess_queries:
             try:
@@ -108,6 +109,7 @@ class Merger(object):
 
     def increment_pks(self):
         cur = self._cursor
+        cur._defer_warnings = True
 
         for table_name, table_map in self._db_map.items():
             if (table_name in self._config.exclude_tables):
@@ -134,6 +136,7 @@ class Merger(object):
 
     def increment_fks(self):
         cur = self._cursor
+        cur._defer_warnings = True
 
         set_clause = ""
         joiner = ""
