@@ -70,7 +70,7 @@ class Merger(object):
         self._logger.log("Processing database '%s'..." % self._source_db['db'])
 
         self._logger.log(" -> 1/6 Executing preprocess_queries (specified in config)")
-        self.execute_preprocess_queries()
+        #self.execute_preprocess_queries()
 
         self._logger.log(" -> 2/6 Re-mapping database")
         self._source_mapper = Mapper(self._conn, self._source_db['db'], self._config, MiniLogger(), verbose=False)
@@ -80,7 +80,7 @@ class Merger(object):
         self._logger.log(" -> 3/6 Incrementing PKs")
         #Do not touch the main DB
         if (self._source_db['db'] != self._config.main_db):
-            self.increment_pks()
+            #self.increment_pks()
 
         self._logger.log(" -> 4/6 Incrementing FKs")
         #Do not touch the main DB
