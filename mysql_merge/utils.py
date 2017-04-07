@@ -58,9 +58,9 @@ def handle_exception(custom_message, exception, connection=None):
     print exception
     print "The traceback is: "
     traceback.print_tb(sys.exc_info()[2])
-    print ""
-    if connection:
-        print "Rollback"
-        connection.rollback()
-    print ""
+    #print ""
+    #if connection:
+    #    print "Rollback"
+    #    connection.rollback()
+    #print ""
     sys.exit()
