@@ -79,7 +79,7 @@ class Merger(object):
 
         self._logger.log(" -> 3/6 Incrementing PKs")
         #Do not touch the main DB
-        if (self._source_db['db'] != self._config.main_db):
+        #if (self._source_db['db'] != self._config.main_db):
             #self.increment_pks()
 
         self._logger.log(" -> 4/6 Incrementing FKs")
